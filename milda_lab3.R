@@ -3,7 +3,7 @@
 ###
 ### Chapter 3
 ###
-
+#setwd("Z:/Documents/Bioinformatics_lab3")
 library(msa)
 x <- paste("AJ5345", 26:49, sep = "")
 x <- c("Z73494", x)
@@ -11,7 +11,7 @@ sylvia.seq <- read.GenBank(x)
 ape::write.dna(sylvia.seq, file ="sylvia_seqs.fasta", format = "fasta", append =FALSE, nbcol = 6, colsep = " ", colw = 10)
 
 sylvia_seqs<-ape::read.FASTA("sylvia_seqs.fasta")
-
+#sylvia.seq <- sylvia_seqs
 # Align the sequences:
 sylvia.clus <- clustal(sylvia.seq)
 aligment_sylvia <- msa("sylvia_seqs.fasta", type="dna")
@@ -196,31 +196,45 @@ lines(density(Pvls))
 #install.packages("ade4")
 #install.packages("mvMORPH")
 #install.packages("mvSLOUCH")
-install.packages("adephylo")
+#install.packages("adephylo")
 library(ade4)
 library(mvMORPH)
 library(mvSLOUCH)
 library(ape)
-data(carni70)
-devtools::install_github("kopperud/slouch")
+#devtools::install_github("kopperud/slouch")
+#install.packages("rlang")
+#install.packages("tibble")
+library(tibble)
+library(rlang)
 
 # Q2.1
+data(carni70)
 
 View(carni70)
 
 carni70_tree <- newick2phylog(carni70$tre)
-plot(carni70_tree)
 
 
-size <- scalewt(log(carni70$tab))[,1]
+size <- scalewt(log(carni70$tab))[,1] # scaled log body size in kg
 names(size) <- row.names(carni70$tab)
+yrange <- scalewt(carni70$tab[,2])# scaled geographic range in km
+names(yrange) <- row.names(carni70$tab)
+
+plot_data <- data.frame(spieces = row.names(carni70$tab), size = size, range =yrange )
+par(mfrow=c(1,1))
+
+plot(plot_data$spieces, plot_data$size, xlab = "Spieces", ylab = "Size", pch = 19,
+     col = rgb(0, 0, 0, 0.1))
+
+plot(plot_data$spieces, plot_data$range, xlab = "Spieces", ylab = "Size", pch = 19,
+     col = rgb(0, 0, 0, 0.1))
+
 symbols.phylog(carni70.phy,size)
 
 tre <- ape::read.tree(text = carni70$tre)
 adephylo::orthogram(size, tre = tre)
 
-yrange <- scalewt(carni70$tab[,2])
-names(yrange) <- row.names(carni70$tab)
+
 symbols.phylog(carni70.phy,yrange)
 adephylo::orthogram(as.vector(yrange), tre = tre)
 
@@ -230,4 +244,37 @@ if(adegraphicsLoaded()) {
 } else {
   s.hist(cbind.data.frame(size, yrange), clabel = 0)
 }
-}
+
+
+# This data set describes the phylogeny of 70 carnivora as reported by Diniz-Filho and Torres (2002). 
+# It also gives the geographic range size and body size corresponding to these 70 species.
+# tre: is a character string giving the phylogenetic tree in Newick format. Branch lengths 
+# are expressed as divergence times (millions of years);
+# tab: s a data frame with 70 species and two traits: size (body size (kg)) ; range (geographic range size (km))
+
+# Q2.2
+tre <- ape::read.tree(text = carni70$tre)
+fit1 <- mvBM(tre, data = carni70$tab, model="BM1")
+
+# library(nlme)
+brownian_corr <- corBrownian(phy = tre)
+# m1 <- gls(size ~ yrange, correlation=brownian_corr)
+# summary(m1)
+
+ace(size, as.phylo(carni70_tree))
+ace(size, tre, method = "pic")
+ace(x, tre, method = "GLS",
+    corStruct = corBrownian(1, bird.orders))
+# Both traits evolve as independent Brownian motions.
+
+# The traits evolve as a correlated Brownian motion.
+
+# Both traits evolve as independent Ornstein{Uhlenbeck processes
+taxa <- carni70$tab
+tre_phylo <- as.phylo(tre)
+fit2 <- corphylo(X = taxa, phy = tre_phylo)
+
+# The traits evolve as a bivariate Ornstein{Uhlenbeck process
+
+# size evolves as a Brownian motion and range as an Ornstein{Uhlenbeck process adapting
+# to it (use slouch or mvSLOUCH and be careful about column order).
