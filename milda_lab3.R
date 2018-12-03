@@ -26,6 +26,8 @@ rm(sylvia.seq)
 taxa.sylvia[1] <- "Sylvia_atricapilla"
 taxa.sylvia[24] <- "Sylvia_abyssinica"
 
+#setwd("D:/LiU/732A51/Bioinformatics_lab3")
+
 sylvia.eco <- read.table("sylvia_data.txt")
 str(sylvia.eco)
 rownames(sylvia.eco)
