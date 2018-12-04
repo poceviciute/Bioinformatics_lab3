@@ -139,3 +139,74 @@ par(mar = c(2, 0, 0, 0))
 plot(sylvia.chrono, edge.width = 100*rts, label.offset = .15)
 axisPhylo()
 write.tree(sylvia.chrono, "sylvia.chrono.tre")
+
+
+
+
+###
+### Chapter 6
+###
+
+load("sylvia.RData")
+nj.est <- read.tree("sylvia_nj_k80.tre")
+nj.est <- drop.tip(nj.est, "Chamaea_fasciata")
+DF <- sylvia.eco[nj.est$tip.label, ]
+table(DF$geo.range, DF$mig.behav)
+
+syl.er <- ace(DF$geo.range, nj.est, type = "d")
+syl.sym <- ace(DF$geo.range, nj.est, type="d", model="SYM")
+anova(syl.er, syl.sym)
+
+mod <- matrix(0, 3, 3)
+mod[2, 1] <- mod[1, 2] <- 1
+mod[2, 3] <- mod[3, 2] <- 2
+syl.mod <- ace(DF$geo.range, nj.est, type="d", model=mod)
+
+sapply(list(syl.er, syl.sym, syl.mod), AIC)
+
+Q <- syl.mod$index.matrix
+diag(Q) <- 0
+Q[1, 2] <- Q[2, 1] <- syl.mod$rates[1]
+Q[2, 3] <- Q[3, 2] <- syl.mod$rates[2]
+
+Q[] <- c(0, syl.mod$rates)[Q + 1]
+diag(Q) <- -rowSums(Q)
+
+P <- matexpo(0.05 * Q)
+rownames(P) <- c("temp", "temptrop", "trop")
+colnames(P) <- rownames(P)
+
+co <- rep("grey", 24)
+co[DF$geo.range == "temp"] <- "black"
+co[DF$geo.range == "trop"] <- "white"
+plot(nj.est, "c", FALSE, no.margin = TRUE, label.offset = 1)
+tiplabels(pch = 22, bg = co, cex = 2, adj = 1)
+nodelabels(thermo = syl.mod$lik.anc, cex = 0.8,
+           piecol = c("black", "grey", "white"))
+
+sylvia.chrono <- read.tree("sylvia.chrono.tre")
+yule(sylvia.chrono)
+birthdeath(sylvia.chrono)
+1 - pchisq(2*(-1.034112 - -1.113822), 1)
+
+x <- sylvia.eco[sylvia.chrono$tip.label, "geo.range"]
+ANC <- ace(x, sylvia.chrono, type = "d", model = mod)
+ANC$lik.anc[1:3, ]
+anc <- apply(ANC$lik.anc, 1, which.max)
+X <- factor(c(x, anc))
+yule.cov(sylvia.chrono, ~ X)
+1 / (1 + exp(-(-0.0535529)))
+1 / (1 + exp(-(-0.0535529 -1.4608019)))
+1 / (1 + exp(-(-0.0535529 -0.9775966)))
+
+fsamp <- function(x) sample(length(x), size = 1, prob = x)
+nrep <- 1e3
+Pvls <- numeric(nrep)
+for (i in 1:nrep) {
+  anc <- apply(ANC$lik.anc, 1, fsamp)
+  X <- factor(c(x, anc))
+  Pvls[i] <- yule.cov(sylvia.chrono, ~ X)$Pval
+}
+hist(Pvls, freq = FALSE, main = "")
+lines(density(Pvls))
+
