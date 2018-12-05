@@ -66,13 +66,20 @@ The plot below shows the phylogenetic tree. The first plot shows how the size tr
 ```{r}
 tre <- as.phylo(carni70_tree)
 carni70_tree <- newick2phylog(carni70$tre)
-cat("Phylogenetic Tree for size")
-cat("\n")
+
+par(mfrow = c(1, 1), oma = c(1, 1, 2, 1))
 symbols.phylog(carni70_tree,size)
-cat("\n")
-cat("Phylogenetic Tree for range")
-cat("\n")
+mtext("Size", side = 3, line = 0, outer = TRUE, font = 2, cex = 1.3)
+par(fig = c(0, 1, .1, .9), oma = c(0, 0, 0, 0), mar = c(0, 0, 0, 0), new = TRUE)
+plot(0, 0, type = "n", bty = "n", xaxt = "n", yaxt = "n")
+legend("top", c("below mean", "above mean"), col = c("black", "black"), lty=c(NA, NA),pch = c(1, 1), lwd = c(1, 4), xpd = TRUE)
+
+par(mfrow = c(1, 1), oma = c(1, 1, 2, 1))
 symbols.phylog(carni70_tree,yrange)
+mtext("Range", side = 3, line = 0, outer = TRUE, font = 2, cex = 1.3)
+par(fig = c(0, 1, .1, .9), oma = c(0, 0, 0, 0), mar = c(0, 0, 0, 0), new = TRUE)
+plot(0, 0, type = "n", bty = "n", xaxt = "n", yaxt = "n")
+legend("top", c("below mean", "above mean"), col = c("black", "black"), lty=c(NA, NA),pch = c(1, 1), lwd = c(1, 4), xpd = TRUE)
 
 
 ```
