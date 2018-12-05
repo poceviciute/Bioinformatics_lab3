@@ -230,7 +230,6 @@ plot(plot_data$spieces, plot_data$range, xlab = "Spieces", ylab = "Size", pch = 
      col = rgb(0, 0, 0, 0.1))
 
 symbols.phylog(carni70.phy,size)
-
 tre <- ape::read.tree(text = carni70$tre)
 adephylo::orthogram(size, tre = tre)
 
@@ -275,11 +274,9 @@ fit1_size <- mvBM(tre, data = carni70$tab[,1], model="BM1")
 fit1_range <- mvBM(tre, data = carni70$tab[,2], model="BM1")
 
 # The traits evolve as a correlated Brownian motion.
-
 fit2 <- mvBM(tre, data = carni70$tab, model="BM1")
 
 # Both traits evolve as independent Ornstein-Uhlenbeck processes
-
 fit3_size <- mvOU(tre, data = carni70$tab[,1], model="OU1")
 fit3_range <- mvOU(tre, data = carni70$tab[,2], model="OU1")
 
