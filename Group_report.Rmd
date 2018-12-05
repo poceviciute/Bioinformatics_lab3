@@ -25,9 +25,9 @@ library(tibble)
 library(rlang)
 ```
 
-## Questions 2
+# Questions 2
 
-### Q2.1
+## Q2.1
 
 In this question we analyse the data from _ade4_ package. It contains the phylogeny of 70 carnivora as reported by Diniz-Filho and Torres (2002), and provides the geographic range size and body size corresponding to them.
 
@@ -43,7 +43,7 @@ names(yrange) <- row.names(carni70$tab)
 plot_data <- data.frame(spieces = row.names(carni70$tab), size = size, range =yrange )
 ```
 
-Plots below show the body sizes and then ranges that correspond to the different spieces, also the plot that shows size and range dependencies for each spieces. There seem to be no obvious linear relation between these two traits.
+Plots below show the body sizes (scaled log), the ranges (scaled), as well as size and range dependencies that correspond to the different spieces. There seem to be no obvious linear relation between these two traits.
 
 ```{r}
 
@@ -61,7 +61,7 @@ plot(plot_data$size, plot_data$range, xlab = "Size", ylab = "Range", pch = 19)
 
 ```
 
-The plot below shows the phylogenetic tree. The first plot shows how the size trait evolved for different spieces. The white nodes represent the size below the mean while the black ones represent the body sizes above the mean. Similarly, the second tree shows the phylogenetic tree with respect to range.
+The plots below shows the phylogenetic tree. The first plot shows how the size trait evolved for different spieces. The white nodes represent the size below the mean while the black ones represent the body sizes above the mean. Similarly, the second tree plot shows the phylogenetic tree with respect to range.
 
 ```{r}
 tre <- as.phylo(carni70_tree)
@@ -84,32 +84,35 @@ legend("top", c("below mean", "above mean"), col = c("black", "black"), lty=c(NA
 
 ```
 
-### Q2.2
+## Q2.2
+
+### Both traits evolve as independent Brownian motions
 
 ```{r}
-# Both traits evolve as independent Brownian motions.
+
 fit1_size <- mvBM(tre, data = carni70$tab[,1], model="BM1")
 fit1_range <- mvBM(tre, data = carni70$tab[,2], model="BM1")
 ```
 
-The models above are each an independent BM for each trait. The models estimated two parameters each:
-* Evolutionary rate matrix: is related to the variance (\[cov(X_1,X_2) = \sigma^2 * t_{12}\]). Hence, the trait size has much higher variance than the range trait:
+The models above are independent BMs for the size and range traits. The models estimated two parameters each:
+* Evolutionary rate matrix: is related to the variance. Hence, the trait size has much higher variance than the range trait:
 
 ```{r}
 fit1_size$sigma
 fit1_range$sigma
 ```
 
-* Estimated ancestral states: this shows that expected value of the body size is higher than the expected value of range.
+* Estimated ancestral states: this shows that the expected value of the body size is higher than the expected value of the range.
 
 ```{r}
 fit1_size$theta
 fit1_range$theta
 ```
 
+### The traits evolve as a correlated Brownian motion.
 
 ```{r}
-# The traits evolve as a correlated Brownian motion.
+
 fit2 <- mvBM(tre, data = carni70$tab, model="BM1")
 ```
 
@@ -126,8 +129,10 @@ fit2$theta
 
 We see that range and size has a positive covariance under this model. The variances and the ancestral states are very close to the onse estimated by the univariate models.
 
+### Both traits evolve as independent Ornstein-Uhlenbeck processes
+
 ```{r,message=FALSE, warning=FALSE}
-# Both traits evolve as independent Ornstein-Uhlenbeck processes
+
 fit3_size <- mvOU(tre, data = carni70$tab[,1], model="OU1")
 fit3_range <- mvOU(tre, data = carni70$tab[,2], model="OU1")
 
@@ -150,11 +155,10 @@ fit3_range$theta
 
 It seems that the size trait is more likely to change over time than the range trait due to much lower alpha value of size. The sigma and theta values are very similar to the ones from the independent Brownian motion models.
 
+### The traits evolve as a bivariate Ornstein-Uhlenbeck process
 
 ```{r}
-
 phyltree = ape2ouch(tre)
-# The traits evolve as a bivariate Ornstein-Uhlenbeck process
 fit5 <- ouchModel(phyltree = phyltree, data = carni70$tab)
 
 ```
@@ -174,12 +178,14 @@ fit5$FinalFound$ParamsInModel$Syy
 
 ```
 
+### _size_ evolves as a Brownian motion and _range_ as an Ornstein-Uhlenbeck process adapting to it
+
 ```{r}
 
 traits <-  data.frame(range=carni70$tab[,2],size=carni70$tab[,1])
 row.names(traits) <- row.names(carni70$tab)
 
-# size evolves as a Brownian motion and range as an Ornstein-Uhlenbeck process adapting to it
+
 fit6 <-mvslouchModel(phyltree, traits,kY=1)
 #
 ```
@@ -205,6 +211,8 @@ fit6$FinalFound$ParamsInModel$Sxx
 ```
 
 We can see that sigma values changes considerbly in comparision to the first three models, but the estimated ancestral states remained almost the same.
+
+### Comparison
 
 All 5 models above tried to fit the parameters based on the given phylogenetic tree, and the observed trait values for the 70 spieces. We compare the models based on the AICc criterion: 
 
