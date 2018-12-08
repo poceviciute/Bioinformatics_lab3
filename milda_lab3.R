@@ -8,7 +8,7 @@ library(msa)
 x <- paste("AJ5345", 26:49, sep = "")
 x <- c("Z73494", x)
 sylvia.seq <- read.GenBank(x)
-ape::write.dna(sylvia.seq, file ="sylvia_seqs.fasta", format = "fasta", append =FALSE, nbcol = 6, colsep = " ", colw = 10)
+#ape::write.dna(sylvia.seq, file ="sylvia_seqs.fasta", format = "fasta", append =FALSE, nbcol = 6, colsep = " ", colw = 10)
 
 sylvia_seqs<-ape::read.FASTA("sylvia_seqs.fasta")
 #sylvia.seq <- sylvia_seqs
@@ -229,8 +229,12 @@ plot(plot_data$spieces, plot_data$size, xlab = "Spieces", ylab = "Size", pch = 1
 plot(plot_data$spieces, plot_data$range, xlab = "Spieces", ylab = "Size", pch = 19,
      col = rgb(0, 0, 0, 0.1))
 
+<<<<<<< HEAD
 symbols.phylog(carni70_phy,size)
 
+=======
+symbols.phylog(carni70.phy,size)
+>>>>>>> master
 tre <- ape::read.tree(text = carni70$tre)
 adephylo::orthogram(size, tre = tre)
 
@@ -254,7 +258,8 @@ if(adegraphicsLoaded()) {
 
 # Q2.2
 tre <- ape::read.tree(text = carni70$tre)
-fit1 <- mvBM(tre, data = carni70$tab, model="BM1")
+
+
 
 # library(nlme)
 brownian_corr <- corBrownian(phy = tre)
@@ -265,16 +270,33 @@ ace(size, as.phylo(carni70_tree))
 ace(size, tre, method = "pic")
 ace(x, tre, method = "GLS",
     corStruct = corBrownian(1, bird.orders))
-# Both traits evolve as independent Brownian motions.
+
+########## Both traits evolve as independent Brownian motions.
+#  The "pic" method uses a very fast algorithm based on independent contrast
+# The "constraint" argument in the "param" list allows the user to compute the joint
+# likelihood  for  each  trait  by  assuming  they  evolved  independently  
+fit1_size <- mvBM(tre, data = carni70$tab[,1], model="BM1")
+fit1_range <- mvBM(tre, data = carni70$tab[,2], model="BM1")
 
 # The traits evolve as a correlated Brownian motion.
+fit2 <- mvBM(tre, data = carni70$tab, model="BM1")
 
-# Both traits evolve as independent Ornstein{Uhlenbeck processes
-taxa <- carni70$tab
-tre_phylo <- as.phylo(tre)
-fit2 <- corphylo(X = taxa, phy = tre_phylo)
+# Both traits evolve as independent Ornstein-Uhlenbeck processes
+fit3_size <- mvOU(tre, data = carni70$tab[,1], model="OU1")
+fit3_range <- mvOU(tre, data = carni70$tab[,2], model="OU1")
 
-# The traits evolve as a bivariate Ornstein{Uhlenbeck process
+# The traits evolve as a bivariate Ornstein-Uhlenbeck process
+fit4 <- mvOU(tre, data = carni70$tab, model="OU1")
+# or this stuff
+library(mvSLOUCH)
+phyltree<-ape2ouch(tre)
 
-# size evolves as a Brownian motion and range as an Ornstein{Uhlenbeck process adapting
+
+fit5 <- mvSLOUCH::mvslouchModel(phyltree, data = carni70$tab, kY=1)
+
+# size evolves as a Brownian motion and range as an Ornstein-Uhlenbeck process adapting
 # to it (use slouch or mvSLOUCH and be careful about column order).
+
+## Wrapper function to find best (out of BM, OU, OUOU, OUBM) fitting
+# evolutionary model and estimate its parameters.
+mvSLOUCH::estimate.evolutionary.model(phyltree = tre, dfdata = carni70$tab,evolmodel = "ouch")
