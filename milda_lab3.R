@@ -229,7 +229,7 @@ plot(plot_data$spieces, plot_data$size, xlab = "Spieces", ylab = "Size", pch = 1
 plot(plot_data$spieces, plot_data$range, xlab = "Spieces", ylab = "Size", pch = 19,
      col = rgb(0, 0, 0, 0.1))
 
-symbols.phylog(carni70.phy,size)
+symbols.phylog(carni70_phy,size)
 
 tre <- ape::read.tree(text = carni70$tre)
 adephylo::orthogram(size, tre = tre)
