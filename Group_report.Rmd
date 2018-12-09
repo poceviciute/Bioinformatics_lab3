@@ -9,6 +9,226 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+In step one we make a vector of accession number to get data of relevant species to be get from Genbank, then we fetch data.
+
+```{r, warning=FALSE,message=FALSE}
+library(msa)
+library(ape)
+
+x <- paste("AJ5345", 26:49, sep = "")
+x <- c("Z73494", x)
+
+#read a data from GenBank
+sylvia.seq <- read.GenBank(x)
+sylvia.seq
+```
+It can be seen that sequence length is not same for all species. The shortest sequence is of length 1041 that is some data is missing.
+
+
+In next step we make a taxon of species containing name of each specie. 
+We have updated the names data with accession number "Z73494" and "AJ534548" with respect to its name in genbank.
+
+```{r}
+
+taxa.sylvia <- attr(sylvia.seq, "species")
+names(taxa.sylvia) <- names(sylvia.seq)
+
+taxa.sylvia[1] <- "Sylvia_atricapilla"
+taxa.sylvia[24] <- "Sylvia_abyssinica"
+
+```
+
+In this step trait data has been loaded which has mig.distance, mig.behaviour and geographicl range of sylvia.
+
+```{r}
+
+sylvia.eco <- read.table("sylvia_data.txt")
+str(sylvia.eco)
+rownames(sylvia.eco)
+
+```
+
+We have determined the multiple sequence alignment and converted it into DNAbin object. 
+Then pairwise distance from DNA sequence has been determined by using the multiple sequence alignment created. Kimura(K80), Galtier and Gouy(GG95),Jukes and Cantor(JC69) and raw distance (that is proportion or the number of sites that differ between each pair of sequences) are calculated.
+
+We have used pairwise.deletion = TRUE because we have observed that there is missing data in our sequence (i-e of length 1041). Pairwise.deletion is a logical indicating whether to delete the sites with missing data in a pairwise way.
+```{r}
+
+write.dna(sylvia.seq, file ="sylvia_seqs.fasta", format = "fasta")
+
+sylvia_aligment <- msa("sylvia_seqs.fasta", type="dna")
+sylvia.seq.ali <- as.DNAbin(sylvia_aligment)
+rownames(sylvia.seq.ali) <- names(sylvia.seq)
+
+
+syl.K80 <- dist.dna(sylvia.seq.ali, pairwise.deletion = TRUE)
+syl.GG95 <- dist.dna(sylvia.seq.ali, model = "GG95", p = TRUE)
+syl.JC69 <- dist.dna(sylvia.seq.ali, model = "JC69", p = TRUE)
+syl.raw <- dist.dna(sylvia.seq.ali, model = "raw", p = TRUE)
+
+```
+
+Then we make the phylogenetic tree using neighbour joining tree and the distance matrix calculated above.
+
+```{r}
+nj.sylvia.K80 <- nj(syl.K80)
+nj.sylvia.GG95 <- nj(syl.GG95)
+
+dist.topo(nj.sylvia.K80, nj.sylvia.GG95) 
+
+```
+
+then we determine the topological distance (that is counts the number of bipartitions shared between two trees). The distance matrix used here are K80 and GG95.
+
+
+
+Since nj tree returns an unrooted tree, we are converting into rooted tree by setting the outgroup(the group wrt which roots are formed) as "AJ534526" specie in function f. This function is used in boot.phylo to sample the phylogenetic tree. 
+
+
+```{r}
+
+f <- function(xx) root(nj(dist.dna(xx, p=TRUE)), "AJ534526")
+tr <- f(sylvia.seq.ali)
+## same than: tr <- root(nj.sylvia.K80, "AJ534526")
+
+nj.boot.sylvia <- boot.phylo(tr, sylvia.seq.ali, f, 200,
+                             rooted = TRUE)
+nj.est <- tr
+```
+
+updaing tip lable of nj estimated to taxa.syliva tips labels and then plotting the estimated phylogenetic tree.
+
+```{r}
+
+nj.est$tip.label <- taxa.sylvia[tr$tip.label]
+plot(nj.est, no.margin = TRUE)
+nodelabels(round(nj.boot.sylvia / 200, 2), bg = "white")
+add.scale.bar(length = 0.01)
+write.tree(nj.est, "sylvia_nj_k80.tre")
+```
+
+The estimated proportion of each node has been shown in the tree.
+The tree is then saved in file **sylvia_nj_k80.tre**
+
+
+#Question 1.2
+
+Creating different models by changing the model parameter.
+
+```{r, message = FALSE, warning = FALSE}
+load("sylvia.RData")
+nj.est <- read.tree("sylvia_nj_k80.tre")
+nj.est <- drop.tip(nj.est, "Chamaea_fasciata")
+DF <- sylvia.eco[nj.est$tip.label, ]
+table(DF$geo.range, DF$mig.behav)
+
+syl.er <- ace(DF$geo.range, nj.est, type = "d") # default is "ER"
+syl.sym <- ace(DF$geo.range, nj.est, type="d", model="SYM")
+syl.ard <- ace(DF$geo.range, nj.est, type="d", model="ARD")
+
+```
+
+```{r}
+sapply(list(syl.er, syl.sym, syl.ard), AIC)
+
+```
+
+We know that smaller the AIC better will be the fit, thus model with Equal rates is the best from the above result.
+
+Model with Equal rates:
+
+```{r}
+
+er_df <- data.frame(estimated_rate = syl.er$rates, standard_error = syl.er$se)
+
+knitr::kable(er_df)
+
+```
+
+
+Symmetrical model:
+
+```{r}
+sym_df <- data.frame(estimated_rate = syl.sym$rates, standard_error = syl.sym$se)
+
+knitr::kable(sym_df)
+```
+
+Model with different rates (no rate is same):
+
+```{r}
+ard_df <- data.frame(estimated_rate = syl.ard$rates, standard_error = syl.ard$se)
+
+knitr::kable(ard_df)
+```
+
+
+From the estimated rates and standard error, it can be seen that there is more uncertainty in the result of sym and ard models.
+
+
+```{r}
+Q <- syl.er$index.matrix
+diag(Q) <- 0
+Q[1, 2] <- Q[2, 1] <- syl.er$rates[1]
+Q[2, 3] <- Q[3, 2] <- syl.er$rates[1]
+
+# Q[] <- c(0, syl.mod$rates)[Q + 1]
+diag(Q) <- -rowSums(Q)
+P <- matexpo(0.05 * Q)
+rownames(P) <- c("temp", "temptrop", "trop")
+colnames(P) <- rownames(P)
+
+P
+```
+
+In ER model the transition occurs on the basis of equal probability. It can be seen that temp to temp and trop to trop transition has high probability as compared to temptrop to temptrop thus it can be assumed that temptrop is least stable of the three. 
+
+
+```{r}
+Q <- syl.sym$index.matrix
+diag(Q) <- 0
+Q[1, 2] <- Q[2, 1] <- syl.sym$rates[1]
+Q[2, 3] <- Q[3, 2] <- syl.sym$rates[3]
+Q[1, 3] <- Q[3, 1] <- syl.sym$rates[2]
+
+# Q[] <- c(0, syl.mod$rates)[Q + 1]
+diag(Q) <- -rowSums(Q)
+P <- matexpo(0.05 * Q)
+rownames(P) <- c("temp", "temptrop", "trop")
+colnames(P) <- rownames(P)
+P
+```
+
+In symmetric model, the results are almost same as the ER model that is temp to temp and trop to trop transition has high probability as compared to temptrop to temptrop thus it can be assumed that temptrop is least stable of the three in this case as well. 
+
+
+```{r}
+Q <- syl.ard$index.matrix
+diag(Q) <- 0
+
+Q[1, 2]  <- syl.ard$rates[1]
+Q[2, 1]  <- syl.ard$rates[3]
+Q[2, 3] <- syl.ard$rates[4]
+Q[3, 2] <- syl.ard$rates[6]
+Q[1, 3] <- syl.ard$rates[2]
+Q[3, 1] <- syl.ard$rates[5]
+
+# Q[] <- c(0, syl.mod$rates)[Q + 1]
+diag(Q) <- -rowSums(Q)
+P <- matexpo(0.05 * Q)
+rownames(P) <- c("temp", "temptrop", "trop")
+colnames(P) <- rownames(P)
+P
+```
+
+In ARD model all rates are different that is it is not symmetric therefore different rates are assigned while making Q matrix. 
+
+From the result, it can be seen that temp to temp probability is highest of all so temp to temp is the most stable one, trop to trop also have considerably high probability but the transition of temptrop to temptrop has even lower probability than temptop to temp. Thus temptrop is the least stable in this case as well. 
+
+
+Therefore we can say that temp and trop has higher chances of surviving through evolution 
+
+
 ```{r}
 #install.packages("ade4")
 #install.packages("mvMORPH")
@@ -19,8 +239,8 @@ library(mvMORPH)
 library(mvSLOUCH)
 library(ape)
 #devtools::install_github("kopperud/slouch")
-#install.packages("rlang")
-#install.packages("tibble")
+# install.packages("rlang")
+# install.packages("tibble")
 library(tibble)
 library(rlang)
 ```
@@ -157,7 +377,7 @@ It seems that the size trait is more likely to change over time than the range t
 
 ### The traits evolve as a bivariate Ornstein-Uhlenbeck process
 
-```{r}
+```{r,eval=FALSE}
 phyltree = ape2ouch(tre)
 fit5 <- ouchModel(phyltree = phyltree, data = carni70$tab)
 
@@ -165,7 +385,7 @@ fit5 <- ouchModel(phyltree = phyltree, data = carni70$tab)
 
 The bivariate OU model estimated parameters:
 
-```{r}
+```{r,eval=FALSE}
 cat("A: strength of selection")
 cat("\n")
 fit5$FinalFound$ParamsInModel$A
@@ -180,7 +400,7 @@ fit5$FinalFound$ParamsInModel$Syy
 
 ### _size_ evolves as a Brownian motion and _range_ as an Ornstein-Uhlenbeck process adapting to it
 
-```{r}
+```{r,eval=FALSE}
 
 traits <-  data.frame(range=carni70$tab[,2],size=carni70$tab[,1])
 row.names(traits) <- row.names(carni70$tab)
@@ -192,7 +412,7 @@ fit6 <-mvslouchModel(phyltree, traits,kY=1)
 
 The bivariate OUBM model estimated these parameters:
   
-```{r}
+```{r,eval=FALSE}
 cat("A: strength of selection")
 cat("\n")
 fit6$FinalFound$ParamsInModel$A
@@ -216,7 +436,7 @@ We can see that sigma values changes considerbly in comparision to the first thr
 
 All 5 models above tried to fit the parameters based on the given phylogenetic tree, and the observed trait values for the 70 spieces. We compare the models based on the AICc criterion: 
 
-```{r}
+```{r,eval=FALSE}
 cat("Comparison of the AICc values:\n")
 cat("Both traits evolve as independent Brownian motions \n")
 fit1_size$AICc + fit1_range$AICc
