@@ -38,7 +38,7 @@ taxa.sylvia[24] <- "Sylvia_abyssinica"
 
 ```
 
-In this step trait data has been loaded which has mig.distance, mig.behaviour and geographicl range of sylvia.
+In this step trait data has been loaded which has mig.distance, mig.behaviour and geographic range of sylvia.
 
 ```{r}
 
@@ -96,7 +96,7 @@ nj.boot.sylvia <- boot.phylo(tr, sylvia.seq.ali, f, 200,
 nj.est <- tr
 ```
 
-updaing tip lable of nj estimated to taxa.syliva tips labels and then plotting the estimated phylogenetic tree.
+updating tip label of nj estimated to taxa.sylvia tips labels and then plotting the estimated phylogenetic tree.
 
 ```{r}
 
@@ -263,7 +263,7 @@ names(yrange) <- row.names(carni70$tab)
 plot_data <- data.frame(spieces = row.names(carni70$tab), size = size, range =yrange )
 ```
 
-Plots below show the body sizes (scaled log), the ranges (scaled), as well as size and range dependencies that correspond to the different spieces. There seem to be no obvious linear relation between these two traits.
+Plots below show the body sizes (scaled log), the ranges (scaled), as well as size and range dependencies that correspond to the different species. There seem to be no obvious linear relation between these two traits.
 
 ```{r}
 
@@ -281,7 +281,7 @@ plot(plot_data$size, plot_data$range, xlab = "Size", ylab = "Range", pch = 19)
 
 ```
 
-The plots below shows the phylogenetic tree. The first plot shows how the size trait evolved for different spieces. The white nodes represent the size below the mean while the black ones represent the body sizes above the mean. Similarly, the second tree plot shows the phylogenetic tree with respect to range.
+The plots below shows the phylogenetic tree. The first plot shows how the size trait evolved for different species. The white nodes represent the size below the mean while the black ones represent the body sizes above the mean. Similarly, the second tree plot shows the phylogenetic tree with respect to range.
 
 ```{r}
 tre <- as.phylo(carni70_tree)
@@ -336,7 +336,7 @@ fit1_range$theta
 fit2 <- mvBM(tre, data = carni70$tab, model="BM1")
 ```
 
-The same paremeters are estimated when both traits are assumed to have corellation between them:
+The same parameters are estimated when both traits are assumed to have correlation between them:
 
 ```{r}
 cat(" Evolutionary rate matrix:")
@@ -347,7 +347,7 @@ cat("\n")
 fit2$theta
 ```
 
-We see that range and size has a positive covariance under this model. The variances and the ancestral states are very close to the onse estimated by the univariate models.
+We see that range and size has a positive covariance under this model. The variances and the ancestral states are very close to the ones estimated by the univariate models.
 
 ### Both traits evolve as independent Ornstein-Uhlenbeck processes
 
@@ -430,11 +430,11 @@ cat("\n")
 fit6$FinalFound$ParamsInModel$Sxx
 ```
 
-We can see that sigma values changes considerbly in comparision to the first three models, but the estimated ancestral states remained almost the same.
+We can see that sigma values changes considerably in comparison to the first three models, but the estimated ancestral states remained almost the same.
 
 ### Comparison
 
-All 5 models above tried to fit the parameters based on the given phylogenetic tree, and the observed trait values for the 70 spieces. We compare the models based on the AICc criterion: 
+All 5 models above tried to fit the parameters based on the given phylogenetic tree, and the observed trait values for the 70 species. We compare the models based on the AICc criterion: 
 
 ```{r,eval=FALSE}
 cat("Comparison of the AICc values:\n")
